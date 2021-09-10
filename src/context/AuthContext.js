@@ -1,5 +1,6 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import createDataContext from "./createDataContext";
+import deliveryApi from "../api/deliveryApi";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { navigate } from "../navigation/navigationRef";
 
@@ -10,51 +11,78 @@ const authReducer = (state, action) => {
     case "clear_err_message":
       return { ...state, errorMessage: "" };
     case "signin":
-      return { errorMessage: "", token: action.payload };
+      return { errorMessage: "", access_token: action.payload };
     case "signout":
-      return { token: null, errorMessage: "" };
+      return { access_token: null, errorMessage: "" };
     default:
       return state;
   }
 };
 
-const signup = (dispatch) => {
-  return ({ email, password }) => {
+const signup =
+  (dispatch) =>
+  async ({ email, password, password_confirmation }) => {
     // api request
     console.log("singup reducer");
-    if (email.length > 0 && password.length > 0) {
-      //   const response =  deliveryApi.post({});
+    if (
+      email.length > 0 &&
+      password.length > 0 &&
+      password_confirmation.length > 0
+    ) {
+      try {
+        const response = await deliveryApi.post("/auth/register", {
+          username: email,
+          password,
+          password_confirmation,
+        });
 
-      const token = "Bearer token";
-      AsyncStorage.setItem("token", token);
-      console.log("signin success");
-      dispatch({ type: "signin", payload: token });
-      navigate("DeliveryScreen");
+        await AsyncStorage.setItem("access_token", response.data.access_token);
 
-      console.log("signup success");
+        dispatch({ type: "signin", payload: response.data.access_token });
+
+        navigate("OrdersScreen");
+      } catch ($err) {
+        dispatch({
+          type: "error",
+          payload: "Invalid username or password",
+        });
+      }
     } else {
       dispatch({
         type: "error",
-        payload: "Something went wrong",
+        payload: "Please enter required fields",
       });
     }
   };
-};
 
 const signin =
   (dispatch) =>
-  async ({ email, password }) => {
+  async ({ email, password, password_confirmation = "" }) => {
     if (email.length > 0 && password.length > 0) {
-      const token = "Bearer token";
-      AsyncStorage.setItem("token", token);
-      console.log("signin success");
-      dispatch({ type: "signin", payload: token });
+      try {
+        const response = await deliveryApi.post("/auth/login", {
+          username: email,
+          password,
+        });
 
-      navigate("OrdersScreen");
+        const access_token = response.data.access_token;
+        await AsyncStorage.setItem("access_token", access_token);
+        console.log("signin");
+        console.log(access_token);
+        dispatch({ type: "signin", payload: access_token });
+
+        navigate("OrdersScreen");
+      } catch ($err) {
+        console.log($err);
+        dispatch({
+          type: "error",
+          payload: "Invalid username or password",
+        });
+      }
     } else {
       dispatch({
         type: "error",
-        payload: "Invalid username or password",
+        payload: "Please enter username and password",
       });
     }
   };
@@ -65,10 +93,10 @@ const clearErrorMessage = (dispatch) => () => {
 
 const tryLocalSignin = (dispatch) => async () => {
   console.log("token in local signin");
-  const token = await AsyncStorage.getItem("token");
-  if (token) {
-    console.log("token:" + token);
-    dispatch({ type: "signin", payload: token });
+  const access_token = await AsyncStorage.getItem("access_token");
+  if (access_token) {
+    console.log("access_token:" + access_token);
+    dispatch({ type: "signin", payload: access_token });
 
     navigate("OrdersScreen");
   } else {
@@ -77,13 +105,14 @@ const tryLocalSignin = (dispatch) => async () => {
 };
 
 const signout = (dispatch) => async () => {
-  await AsyncStorage.removeItem("token");
+  await deliveryApi.post("/auth/logout");
   dispatch({ tpye: "signout" });
+  await AsyncStorage.removeItem("access_token");
   navigate("loginFlow");
 };
 
 export const { Provider, Context } = createDataContext(
   authReducer,
   { signup, signin, signout, clearErrorMessage, tryLocalSignin },
-  { token: null, errorMessage: "" }
+  { access_token: null, errorMessage: "" }
 );

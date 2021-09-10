@@ -10,6 +10,7 @@ import Spacer from "../Spacer";
 const AuthForm = ({ headerText, errorMessage, onSubmit, submitButtonText }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [password_confirmation, setPasswordConfirmation] = useState("");
 
   return (
     <>
@@ -32,6 +33,17 @@ const AuthForm = ({ headerText, errorMessage, onSubmit, submitButtonText }) => {
         autoCapitalize="none"
         autoCorrect={false}
       />
+      {headerText.toLowerCase() == "sign up" ? (
+        <Input
+          secureTextEntry
+          label="Confirm Password"
+          value={password_confirmation}
+          onChangeText={setPasswordConfirmation}
+          autoCapitalize="none"
+          autoCorrect={false}
+        />
+      ) : null}
+
       {errorMessage ? (
         <Text style={styles.errorMessage}>{errorMessage}</Text>
       ) : null}
@@ -39,7 +51,7 @@ const AuthForm = ({ headerText, errorMessage, onSubmit, submitButtonText }) => {
         <Button
           title={submitButtonText}
           onPress={() => {
-            onSubmit({ email, password });
+            onSubmit({ email, password, password_confirmation });
           }}
         />
       </Spacer>

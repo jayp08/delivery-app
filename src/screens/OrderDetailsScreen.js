@@ -1,28 +1,22 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useCallback } from "react";
 import { StyleSheet, View } from "react-native";
 import { Text, Button } from "react-native-elements";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { requestBackgroundPermissionsAsync } from "expo-location";
 
 import Spacer from "../components/Spacer";
 import Map from "../components/Map";
-
-import { navigate } from "../navigation/navigationRef";
+import { Context as LocationContext } from "./../context/LocationContext";
+import useLocation from "../hooks/useLocation";
 
 const OrderDetailsScreen = ({ navigation }) => {
-  const [err, setErr] = useState(null);
-
-  const startWatching = async () => {
-    try {
-      await requestBackgroundPermissionsAsync();
-    } catch (e) {
-      setErr(e);
-    }
-  };
-
-  useEffect(() => {
-    startWatching();
-  }, []);
+  const { state, addLocation, startRecording, locations } =
+    useContext(LocationContext);
+  const callback = useCallback(
+    (location) => {
+      addLocation(location, state.recording);
+    },
+    [state.recording]
+  );
+  const [err] = useLocation(callback);
 
   return (
     <View style={styles.container}>
@@ -31,17 +25,27 @@ const OrderDetailsScreen = ({ navigation }) => {
         <Map />
       </View>
 
-      {err ? <Text>Please enable location services</Text> : null}
-
       <View style={styles.bottomContainer}>
         <View style={styles.buttonContainer}>
           <Spacer>
+            <Text>{err}</Text>
+            {err ? (
+              <Text
+                style={{
+                  fontSize: 18,
+                  color: "red",
+                  fontWeight: "bold",
+                  padding: 10,
+                }}
+              >
+                Please enable location services
+              </Text>
+            ) : null}
             <Button
-              title="CONFIRM DELIVERY"
+              disabled={err}
+              title="CONFIRM PICKUP"
               buttonStyle={{ backgroundColor: "green" }}
-              onPress={() => {
-                // navigation.navigate("ConfrimOrderDeliveryScreen");
-              }}
+              onPress={startRecording}
             />
           </Spacer>
         </View>

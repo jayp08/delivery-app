@@ -1,7 +1,14 @@
-import React from "react";
-import { View, StyleSheet, Dimensions, Text } from "react-native";
-import MapView, { Polyline, Marker, Callout } from "react-native-maps";
-
+import { LocationSubscriber } from "expo-location/build/LocationSubscribers";
+import React, { useContext, useRef } from "react";
+import {
+  View,
+  StyleSheet,
+  Dimensions,
+  Text,
+  ActivityIndicator,
+} from "react-native";
+import MapView, { Polyline, Marker, Callout, Circle } from "react-native-maps";
+import { Context as LocationContext } from "./../context/LocationContext";
 // "config": {
 //   "googleMaps": {
 //     "apiKey": "AIzaSyC76BF2yyLVWUTYHnFcGiJNVwSN9GaKhVw"
@@ -9,42 +16,38 @@ import MapView, { Polyline, Marker, Callout } from "react-native-maps";
 // }
 
 const Map = () => {
-  let points = [];
-  let sg_lat = 1.29027;
-  let sg_long = 103.851959;
+  // const map = useRef(null);
+  const {
+    state: { currentLocation, locations },
+  } = useContext(LocationContext);
+
+  if (!currentLocation) {
+    return (
+      <ActivityIndicator
+        size="large"
+        style={{ marginTop: 200 }}
+      ></ActivityIndicator>
+    );
+  }
+
   let latitude = 1.3045469;
   let longitude = 103.8333977;
   let as_latitude = 1.360265;
   let as_longitude = 103.8389356;
 
-  // for (let i = 0; i < 20; i++) {
-  //   if (i % 2 === 0) {
-  //     points.push({
-  //       latitude: latitude + i * 0.001,
-  //       longitude: longitude + i * 0.001,
-  //     });
-  //   } else {
-  //     points.push({
-  //       latitude: latitude - i * 0.001,
-  //       longitude: longitude + i * 0.001,
-  //     });
-  //   }
-  // }
-
   return (
     <View style={styles.container}>
       <MapView
+        ref={(map) => {
+          this.map = map;
+        }}
         style={{
           borderColor: "red",
           borderWidth: 3,
         }}
-        ref={(map) => {
-          this.map = map;
-        }}
         style={styles.map}
         initialRegion={{
-          latitude: latitude,
-          longitude: longitude,
+          ...currentLocation.coords,
           latitudeDelta: 0.0922,
           longitudeDelta: 0.0421,
         }}
@@ -71,6 +74,13 @@ const Map = () => {
             <Text>Autoscan Address</Text>
           </Callout>
         </Marker>
+        <Circle
+          center={currentLocation.coords}
+          radius={30}
+          strokeColor="rgba(158, 158, 255, 1.0)"
+          fillColor="rgba(158, 158, 255, 0.7)"
+        />
+        {/* <Polyline coordinates={locations.map((loc) => loc.coords)} /> */}
       </MapView>
     </View>
   );
